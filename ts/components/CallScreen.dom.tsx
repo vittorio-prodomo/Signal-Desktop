@@ -153,6 +153,9 @@ export type PropsType = {
   setLocalAudio: SetLocalAudioType;
   setLocalVideo: SetLocalVideoType;
   setLocalPreviewContainer: (options: SetLocalPreviewContainerType) => void;
+  // Where the user last dragged their own video to, persisted across restarts
+  localPreviewPosition: DraggablePositionType | undefined;
+  saveLocalPreviewPosition: (position: DraggablePositionType) => void;
   setRendererCanvas: (_: SetRendererCanvasType) => void;
   stickyControls: boolean;
   switchToPresentationView: () => void;
@@ -188,13 +191,6 @@ const LOCAL_PREVIEW_HEIGHT_NORMAL = 80;
 const LOCAL_PREVIEW_WIDTH_NORMAL = 106.67;
 const LOCAL_PREVIEW_HEIGHT_LARGE = 234;
 const LOCAL_PREVIEW_WIDTH_LARGE = 312;
-
-// Where the user last dragged the self-view to. Kept for the lifetime of the
-// window so it survives toggling the PiP and starting new calls.
-let lastLocalPreviewPosition: DraggablePositionType | undefined;
-function saveLocalPreviewPosition(position: DraggablePositionType): void {
-  lastLocalPreviewPosition = position;
-}
 
 function CallDuration({
   joinedAt,
@@ -246,6 +242,8 @@ export function CallScreen({
   setLocalAudio,
   setLocalVideo,
   setLocalPreviewContainer,
+  localPreviewPosition: savedLocalPreviewPosition,
+  saveLocalPreviewPosition,
   setRendererCanvas,
   stickyControls,
   switchToPresentationView,
@@ -304,7 +302,6 @@ export function CallScreen({
   }, [hangUpActiveCall]);
 
   const localPreviewRef = useRef<HTMLDivElement | null>(null);
-  const lonelyCallPreviewRef = useRef<HTMLDivElement | null>(null);
 
   const [localPreviewHeight, setLocalPreviewHeight] = useState(
     activeCall.selfViewExpanded
@@ -323,7 +320,7 @@ export function CallScreen({
     onPointerDown: onLocalPreviewPointerDown,
     onClickCapture: onLocalPreviewClickCapture,
   } = useDraggablePosition({
-    initialPosition: lastLocalPreviewPosition,
+    initialPosition: savedLocalPreviewPosition,
     onPositionChange: saveLocalPreviewPosition,
   });
 
@@ -493,7 +490,6 @@ export function CallScreen({
       : [];
 
   let lonelyInCallNode: ReactNode;
-  let localPreviewNode: ReactNode;
 
   const raisedHands = isGroupOrAdhocActiveCall(activeCall)
     ? activeCall.raisedHands
@@ -549,29 +545,15 @@ export function CallScreen({
   );
 
   useLayoutEffect(() => {
-    if (!isSendingVideo) {
-      return;
-    }
-    if (isLonelyInCall && !lonelyCallPreviewRef.current) {
-      return;
-    }
-    if (!isLonelyInCall && !localPreviewRef.current) {
+    if (!isSendingVideo || !localPreviewRef.current) {
       return;
     }
 
-    if (lonelyCallPreviewRef.current) {
-      setLocalPreviewContainer({
-        container: lonelyCallPreviewRef.current,
-        sizeCallback: undefined,
-      });
-    }
-    if (localPreviewRef.current) {
-      setLocalPreviewContainer({
-        container: localPreviewRef.current,
-        sizeCallback: handleSize,
-      });
-    }
-  }, [isSendingVideo, handleSize, isLonelyInCall, setLocalPreviewContainer]);
+    setLocalPreviewContainer({
+      container: localPreviewRef.current,
+      sizeCallback: handleSize,
+    });
+  }, [isSendingVideo, handleSize, setLocalPreviewContainer]);
 
   const { selfViewExpanded } = activeCall;
   const previousSelfViewExpanded = usePreviousDeprecated(
@@ -602,154 +584,138 @@ export function CallScreen({
   ]);
 
   if (isLonelyInCall) {
+    // Our own video is shown in the floating, draggable self-view even when
+    // we're alone, so only a backdrop is needed here.
     lonelyInCallNode = (
-      <div
-        className={classNames(
-          'module-ongoing-call__local-preview-fullsize',
-          presentingSource &&
-            'module-ongoing-call__local-preview-fullsize--presenting'
-        )}
-      >
-        {isSendingVideo ? (
-          <div
-            className="module-ongoing-call__local-preview-container"
-            ref={lonelyCallPreviewRef}
-          />
-        ) : (
-          <CallBackgroundBlur avatarUrl={me.avatarUrl}>
-            <div className="module-calling__spacer module-calling__camera-is-off-spacer" />
-            <div className="module-calling__camera-is-off">
-              {i18n('icu:calling__your-video-is-off')}
-            </div>
-          </CallBackgroundBlur>
-        )}
-      </div>
-    );
-  } else {
-    const innerPreviewNode = isSendingVideo ? (
-      <div
-        className={classNames(
-          'module-ongoing-call__local-preview__video',
-          presentingSource &&
-            'module-ongoing-call__local-preview__video--presenting'
-        )}
-        ref={localPreviewRef}
-      />
-    ) : (
-      <CallBackgroundBlur
-        className="module-ongoing-call__local-preview__background"
-        avatarUrl={me.avatarUrl}
-      >
-        <Avatar
-          avatarPlaceholderGradient={me.avatarPlaceholderGradient}
-          avatarUrl={me.avatarUrl}
-          badge={undefined}
-          color={me.color || AvatarColors[0]}
-          hasAvatar={me.hasAvatar}
-          noteToSelf={false}
-          conversationType="direct"
-          i18n={i18n}
-          phoneNumber={me.phoneNumber}
-          profileName={me.profileName}
-          title={me.title}
-          size={AvatarSize.FORTY}
-        />
-      </CallBackgroundBlur>
-    );
-    localPreviewNode = (
-      // Keyboard shortcuts are available for this gesture, no need for keyboard support
-      // oxlint-disable-next-line jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events
-      <div
-        className={classNames(
-          'module-ongoing-call__local-preview',
-          'module-ongoing-call__local-preview--active',
-          activeCall.selfViewExpanded
-            ? 'module-ongoing-call__local-preview--expanded'
-            : undefined,
-          controlsFadedOut
-            ? 'module-ongoing-call__local-preview--controls-hidden'
-            : undefined,
-          localPreviewPosition
-            ? 'module-ongoing-call__local-preview--custom-position'
-            : undefined,
-          isDraggingLocalPreview
-            ? 'module-ongoing-call__local-preview--dragging'
-            : undefined
-        )}
-        style={{
-          height: `${localPreviewHeight}px`,
-          width: `${localPreviewWidth}px`,
-          ...getDraggablePositionStyle(localPreviewPosition, {
-            width: localPreviewWidth,
-            height: localPreviewHeight,
-          }),
-        }}
-        onMouseEnter={onSelfViewMouseEnter}
-        onMouseLeave={onSelfViewMouseLeave}
-        onPointerDown={onLocalPreviewPointerDown}
-        onClickCapture={onLocalPreviewClickCapture}
-        onDragStart={event => event.preventDefault()}
-        onClick={handlePreviewClick}
-      >
-        {innerPreviewNode}
-        {!isSendingVideo && (
-          <div
-            className={classNames(
-              'CallingStatusIndicator',
-              'CallingStatusIndicator--NoVideo',
-              !showSelfViewControls
-                ? 'module-ongoing-call__controls--fadeIn'
-                : undefined,
-              showSelfViewControls
-                ? 'module-ongoing-call__controls--fadeOut'
-                : undefined
-            )}
-          >
-            <AxoSymbol.Icon
-              size={16}
-              symbol="videocamera-slash-fill"
-              label={null}
-            />
-          </div>
-        )}
-        <CallingAudioIndicator
-          hasAudio={hasLocalAudio}
-          audioLevel={localAudioLevel}
-          shouldShowSpeaking={isSpeaking}
-        />
-        <div
-          className={classNames(
-            'CallingButton__Button--self-view',
-            showSelfViewControls
-              ? 'module-ongoing-call__controls--fadeIn'
-              : undefined,
-            !showSelfViewControls
-              ? 'module-ongoing-call__controls--fadeOut'
-              : undefined,
-            !activeCall.selfViewExpanded
-              ? 'CallingButton__Button--self-view-normal'
-              : undefined
-          )}
-        >
-          <CallingButton
-            buttonType={
-              activeCall.selfViewExpanded
-                ? CallingButtonType.MINIMIZE
-                : CallingButtonType.MAXIMIZE
-            }
-            i18n={i18n}
-            onClick={handlePreviewClick}
-          />
-        </div>
-        {myRaisedHandOrder !== undefined && (
-          <CallingStatusIndicatorHandRaised
-            isOnlyHandRaised={isOnlyHandRaisedMine}
-            raisedHandOrder={myRaisedHandOrder}
-          />
-        )}
+      <div className="module-ongoing-call__lonely-backdrop">
+        <CallBackgroundBlur avatarUrl={me.avatarUrl} />
       </div>
     );
   }
+
+  const innerPreviewNode = isSendingVideo ? (
+    <div
+      className={classNames(
+        'module-ongoing-call__local-preview__video',
+        presentingSource &&
+          'module-ongoing-call__local-preview__video--presenting'
+      )}
+      ref={localPreviewRef}
+    />
+  ) : (
+    <CallBackgroundBlur
+      className="module-ongoing-call__local-preview__background"
+      avatarUrl={me.avatarUrl}
+    >
+      <Avatar
+        avatarPlaceholderGradient={me.avatarPlaceholderGradient}
+        avatarUrl={me.avatarUrl}
+        badge={undefined}
+        color={me.color || AvatarColors[0]}
+        hasAvatar={me.hasAvatar}
+        noteToSelf={false}
+        conversationType="direct"
+        i18n={i18n}
+        phoneNumber={me.phoneNumber}
+        profileName={me.profileName}
+        title={me.title}
+        size={AvatarSize.FORTY}
+      />
+    </CallBackgroundBlur>
+  );
+  const localPreviewNode = (
+    // Keyboard shortcuts are available for this gesture, no need for keyboard support
+    // oxlint-disable-next-line jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events
+    <div
+      className={classNames(
+        'module-ongoing-call__local-preview',
+        'module-ongoing-call__local-preview--active',
+        activeCall.selfViewExpanded
+          ? 'module-ongoing-call__local-preview--expanded'
+          : undefined,
+        controlsFadedOut
+          ? 'module-ongoing-call__local-preview--controls-hidden'
+          : undefined,
+        localPreviewPosition
+          ? 'module-ongoing-call__local-preview--custom-position'
+          : undefined,
+        isDraggingLocalPreview
+          ? 'module-ongoing-call__local-preview--dragging'
+          : undefined
+      )}
+      style={{
+        height: `${localPreviewHeight}px`,
+        width: `${localPreviewWidth}px`,
+        ...getDraggablePositionStyle(localPreviewPosition, {
+          width: localPreviewWidth,
+          height: localPreviewHeight,
+        }),
+      }}
+      onMouseEnter={onSelfViewMouseEnter}
+      onMouseLeave={onSelfViewMouseLeave}
+      onPointerDown={onLocalPreviewPointerDown}
+      onClickCapture={onLocalPreviewClickCapture}
+      onDragStart={event => event.preventDefault()}
+      onClick={handlePreviewClick}
+    >
+      {innerPreviewNode}
+      {!isSendingVideo && (
+        <div
+          className={classNames(
+            'CallingStatusIndicator',
+            'CallingStatusIndicator--NoVideo',
+            !showSelfViewControls
+              ? 'module-ongoing-call__controls--fadeIn'
+              : undefined,
+            showSelfViewControls
+              ? 'module-ongoing-call__controls--fadeOut'
+              : undefined
+          )}
+        >
+          <AxoSymbol.Icon
+            size={16}
+            symbol="videocamera-slash-fill"
+            label={null}
+          />
+        </div>
+      )}
+      <CallingAudioIndicator
+        hasAudio={hasLocalAudio}
+        audioLevel={localAudioLevel}
+        shouldShowSpeaking={isSpeaking}
+      />
+      <div
+        className={classNames(
+          'CallingButton__Button--self-view',
+          showSelfViewControls
+            ? 'module-ongoing-call__controls--fadeIn'
+            : undefined,
+          !showSelfViewControls
+            ? 'module-ongoing-call__controls--fadeOut'
+            : undefined,
+          !activeCall.selfViewExpanded
+            ? 'CallingButton__Button--self-view-normal'
+            : undefined
+        )}
+      >
+        <CallingButton
+          buttonType={
+            activeCall.selfViewExpanded
+              ? CallingButtonType.MINIMIZE
+              : CallingButtonType.MAXIMIZE
+          }
+          i18n={i18n}
+          onClick={handlePreviewClick}
+        />
+      </div>
+      {myRaisedHandOrder !== undefined && (
+        <CallingStatusIndicatorHandRaised
+          isOnlyHandRaised={isOnlyHandRaisedMine}
+          raisedHandOrder={myRaisedHandOrder}
+        />
+      )}
+    </div>
+  );
 
   let videoButtonType: CallingButtonType;
   if (presentingSource) {

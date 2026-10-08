@@ -255,6 +255,8 @@ const createProps = (
   setGroupCallVideoRequest: action('set-group-call-video-request'),
   setLocalAudio: action('set-local-audio'),
   setLocalPreviewContainer: action('set-local-preview-container'),
+  localPreviewPosition: undefined,
+  saveLocalPreviewPosition: action('save-local-preview-position'),
   setLocalVideo: action('set-local-video'),
   setRendererCanvas: action('set-renderer-canvas'),
   stickyControls: false,
@@ -435,6 +437,23 @@ export function SelfViewExpanded(): JSX.Element {
   );
 }
 
+export function SelfViewDraggedToTopLeft(): JSX.Element {
+  return (
+    <CallScreen
+      {...createProps({
+        callMode: CallMode.Direct,
+        hasLocalVideo: true,
+      })}
+      localPreviewPosition={{
+        horizontal: 'left',
+        vertical: 'top',
+        x: 24,
+        y: 80,
+      }}
+    />
+  );
+}
+
 export function SelfViewExpandedBothSpeaking(): JSX.Element {
   return (
     <CallScreen
@@ -484,6 +503,17 @@ export function GroupCall0(): JSX.Element {
     callMode: CallMode.Group,
     remoteParticipants: [],
     groupMembers: [],
+    outgoingRing: false,
+  });
+  return <CallScreen {...props} />;
+}
+
+export function GroupCall0WithLocalVideo(): JSX.Element {
+  const props = createProps({
+    callMode: CallMode.Group,
+    remoteParticipants: [],
+    groupMembers: [],
+    hasLocalVideo: true,
     outgoingRing: false,
   });
   return <CallScreen {...props} />;
