@@ -76,6 +76,7 @@ import { getControlOrAltKey } from '../hooks/useKeyboardShortcuts.dom.tsx';
 import { useValueAtFixedRate } from '../hooks/useValueAtFixedRate.std.ts';
 import type { DraggablePositionType } from '../hooks/useDraggablePosition.dom.ts';
 import {
+  DRAGGABLE_POSITION_KEY_SHORTCUTS,
   getDraggablePositionStyle,
   useDraggablePosition,
 } from '../hooks/useDraggablePosition.dom.ts';
@@ -314,14 +315,21 @@ export function CallScreen({
       : LOCAL_PREVIEW_WIDTH_NORMAL
   );
 
+  const localPreviewSize = useMemo(
+    () => ({ width: localPreviewWidth, height: localPreviewHeight }),
+    [localPreviewWidth, localPreviewHeight]
+  );
   const {
     position: localPreviewPosition,
     isDragging: isDraggingLocalPreview,
     onPointerDown: onLocalPreviewPointerDown,
     onClickCapture: onLocalPreviewClickCapture,
+    onKeyDown: onLocalPreviewKeyDown,
+    onKeyUp: onLocalPreviewKeyUp,
   } = useDraggablePosition({
     initialPosition: savedLocalPreviewPosition,
     onPositionChange: saveLocalPreviewPosition,
+    size: localPreviewSize,
   });
 
   const reactButtonRef = useRef<null | HTMLDivElement>(null);
@@ -624,8 +632,9 @@ export function CallScreen({
     </CallBackgroundBlur>
   );
   const localPreviewNode = (
-    // Keyboard shortcuts are available for this gesture, no need for keyboard support
-    // oxlint-disable-next-line jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events
+    // Clicking has a keyboard shortcut (Shift+P) and moving is done with the
+    // arrow keys while the self-view's button has focus.
+    // oxlint-disable-next-line jsx-a11y/no-static-element-interactions
     <div
       className={classNames(
         'module-ongoing-call__local-preview',
@@ -646,15 +655,15 @@ export function CallScreen({
       style={{
         height: `${localPreviewHeight}px`,
         width: `${localPreviewWidth}px`,
-        ...getDraggablePositionStyle(localPreviewPosition, {
-          width: localPreviewWidth,
-          height: localPreviewHeight,
-        }),
+        ...getDraggablePositionStyle(localPreviewPosition, localPreviewSize),
       }}
       onMouseEnter={onSelfViewMouseEnter}
       onMouseLeave={onSelfViewMouseLeave}
       onPointerDown={onLocalPreviewPointerDown}
       onClickCapture={onLocalPreviewClickCapture}
+      // Arrow keys move the self-view while its button has focus
+      onKeyDown={onLocalPreviewKeyDown}
+      onKeyUp={onLocalPreviewKeyUp}
       onDragStart={event => event.preventDefault()}
       onClick={handlePreviewClick}
     >
@@ -699,6 +708,7 @@ export function CallScreen({
         )}
       >
         <CallingButton
+          ariaKeyShortcuts={DRAGGABLE_POSITION_KEY_SHORTCUTS}
           buttonType={
             activeCall.selfViewExpanded
               ? CallingButtonType.MINIMIZE

@@ -35,6 +35,7 @@ export enum CallingButtonType {
 }
 
 export type PropsType = {
+  ariaKeyShortcuts?: string;
   buttonType: CallingButtonType;
   i18n: LocalizerType;
   isVisible?: boolean;
@@ -45,6 +46,7 @@ export type PropsType = {
 };
 
 export function CallingButton({
+  ariaKeyShortcuts,
   buttonType,
   i18n,
   isVisible = true,
@@ -146,6 +148,7 @@ export function CallingButton({
   );
   const buttonContent = (
     <button
+      aria-keyshortcuts={ariaKeyShortcuts}
       aria-label={tooltipContent}
       className={classNames(
         'CallingButton__icon',
