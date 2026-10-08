@@ -74,6 +74,11 @@ import {
 } from './CallingAudioIndicator.dom.tsx';
 import { getControlOrAltKey } from '../hooks/useKeyboardShortcuts.dom.tsx';
 import { useValueAtFixedRate } from '../hooks/useValueAtFixedRate.std.ts';
+import type { DraggablePositionType } from '../hooks/useDraggablePosition.dom.ts';
+import {
+  getDraggablePositionStyle,
+  useDraggablePosition,
+} from '../hooks/useDraggablePosition.dom.ts';
 import { isReconnecting as callingIsReconnecting } from '../util/callingIsReconnecting.std.ts';
 import { usePreviousDeprecated } from '../hooks/usePrevious.std.ts';
 import {
@@ -183,6 +188,13 @@ const LOCAL_PREVIEW_HEIGHT_NORMAL = 80;
 const LOCAL_PREVIEW_WIDTH_NORMAL = 106.67;
 const LOCAL_PREVIEW_HEIGHT_LARGE = 234;
 const LOCAL_PREVIEW_WIDTH_LARGE = 312;
+
+// Where the user last dragged the self-view to. Kept for the lifetime of the
+// window so it survives toggling the PiP and starting new calls.
+let lastLocalPreviewPosition: DraggablePositionType | undefined;
+function saveLocalPreviewPosition(position: DraggablePositionType): void {
+  lastLocalPreviewPosition = position;
+}
 
 function CallDuration({
   joinedAt,
@@ -304,6 +316,16 @@ export function CallScreen({
       ? LOCAL_PREVIEW_WIDTH_LARGE
       : LOCAL_PREVIEW_WIDTH_NORMAL
   );
+
+  const {
+    position: localPreviewPosition,
+    isDragging: isDraggingLocalPreview,
+    onPointerDown: onLocalPreviewPointerDown,
+    onClickCapture: onLocalPreviewClickCapture,
+  } = useDraggablePosition({
+    initialPosition: lastLocalPreviewPosition,
+    onPositionChange: saveLocalPreviewPosition,
+  });
 
   const reactButtonRef = useRef<null | HTMLDivElement>(null);
   const reactionPickerRef = useRef<null | HTMLDivElement>(null);
@@ -646,14 +668,27 @@ export function CallScreen({
             : undefined,
           controlsFadedOut
             ? 'module-ongoing-call__local-preview--controls-hidden'
+            : undefined,
+          localPreviewPosition
+            ? 'module-ongoing-call__local-preview--custom-position'
+            : undefined,
+          isDraggingLocalPreview
+            ? 'module-ongoing-call__local-preview--dragging'
             : undefined
         )}
         style={{
           height: `${localPreviewHeight}px`,
           width: `${localPreviewWidth}px`,
+          ...getDraggablePositionStyle(localPreviewPosition, {
+            width: localPreviewWidth,
+            height: localPreviewHeight,
+          }),
         }}
         onMouseEnter={onSelfViewMouseEnter}
         onMouseLeave={onSelfViewMouseLeave}
+        onPointerDown={onLocalPreviewPointerDown}
+        onClickCapture={onLocalPreviewClickCapture}
+        onDragStart={event => event.preventDefault()}
         onClick={handlePreviewClick}
       >
         {innerPreviewNode}
