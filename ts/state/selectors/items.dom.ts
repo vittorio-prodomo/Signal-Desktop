@@ -13,6 +13,7 @@ import type {
 } from '../../types/Colors.std.ts';
 import type { AciString } from '../../types/ServiceId.std.ts';
 import type { UnreadCountBadgeType } from '../../types/StorageKeys.std.ts';
+import type { DraggablePositionType } from '../../hooks/useDraggablePosition.dom.ts';
 import { STORAGE_KEY_DEFAULTS } from '../../types/StorageKeys.std.ts';
 import { DEFAULT_CONVERSATION_COLOR } from '../../types/Colors.std.ts';
 import { getPreferredReactionEmoji as getPreferredReactionEmojiFromStoredValue } from '../../reactions/preferredReactionEmoji.std.ts';
@@ -250,6 +251,24 @@ export const getUnreadCountBadgeType = createSelector(
 export const getTextFormattingEnabled = createSelector(
   getItems,
   (state: ItemsStateType): boolean => state.textFormatting ?? true
+);
+
+export const getCallLocalPreviewPosition = createSelector(
+  getItems,
+  ({
+    callLocalPreviewPosition: position,
+  }: Readonly<ItemsStateType>): DraggablePositionType | undefined => {
+    if (
+      position != null &&
+      (position.horizontal === 'left' || position.horizontal === 'right') &&
+      (position.vertical === 'top' || position.vertical === 'bottom') &&
+      Number.isFinite(position.x) &&
+      Number.isFinite(position.y)
+    ) {
+      return position;
+    }
+    return undefined;
+  }
 );
 
 export const getNavTabsCollapsed = createSelector(

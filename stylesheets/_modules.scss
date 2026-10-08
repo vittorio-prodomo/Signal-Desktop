@@ -3908,29 +3908,12 @@ button.module-image__border-overlay:focus-visible {
     }
   }
 
-  &__local-preview-container {
-    display: contents;
-  }
-
-  &__local-preview-fullsize {
+  &__lonely-backdrop {
     position: absolute;
     top: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
     width: 100%;
     height: 100%;
     z-index: variables.$z-index-negative;
-
-    video {
-      @include mixins.lonely-local-video-preview;
-    }
-
-    &--presenting {
-      video {
-        transform: none;
-      }
-    }
   }
 
   &__local-preview {
@@ -3951,6 +3934,8 @@ button.module-image__border-overlay:focus-visible {
 
     overflow: hidden;
     cursor: pointer;
+    user-select: none;
+    touch-action: none;
 
     &--active {
       box-shadow: 0px 4px 14px 0px variables.$color-black-alpha-40;
@@ -3966,6 +3951,16 @@ button.module-image__border-overlay:focus-visible {
 
     &--controls-hidden {
       bottom: 16px;
+    }
+
+    // Dragged by the user: the physical offsets come from inline styles
+    &--custom-position {
+      inset: auto;
+    }
+
+    &--dragging {
+      cursor: grabbing;
+      transition: none;
     }
 
     &__background {

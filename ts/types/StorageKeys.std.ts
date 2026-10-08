@@ -31,6 +31,7 @@ import type { AssertSameMembers } from './Util.std.ts';
 import type { Emoji } from '../axo/emoji.std.ts';
 import type { PartialRegistrationType } from './StandaloneRegistration.std.ts';
 import type { RegistrationQueueJobState } from '../jobs/registrationJobQueue.preload.ts';
+import type { DraggablePositionType } from '../hooks/useDraggablePosition.dom.ts';
 
 export type AutoDownloadAttachmentType = {
   photos: boolean;
@@ -205,6 +206,8 @@ export type StorageAccessType = {
   paymentAddress: string;
   zoomFactor: ZoomFactorType;
   preferredLeftPaneWidth: number;
+  // Where the user dragged their own video to during calls
+  callLocalPreviewPosition: DraggablePositionType;
   nextScheduledUpdateKeyTime: number;
   navTabsCollapsed: boolean;
   areWeASubscriber: boolean;
@@ -384,6 +387,7 @@ export const STORAGE_KEYS_TO_PRESERVE_AFTER_UNLINK = [
   'autoConvertEmoji',
   'badge-count-muted-conversations',
   'call-ringtone-notification',
+  'callLocalPreviewPosition',
   'customColors',
   'defaultConversationColor',
   'existingOnboardingStoryMessageIds',

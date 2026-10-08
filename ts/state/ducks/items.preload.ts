@@ -80,6 +80,7 @@ export const actions = {
   removeCustomColor,
   resetDefaultChatColor,
   savePreferredLeftPaneWidth,
+  saveCallLocalPreviewPosition,
   setGlobalDefaultConversationColor,
   toggleNavTabsCollapse,
   setEmojiSkinToneDefault,
@@ -279,6 +280,14 @@ function savePreferredLeftPaneWidth(
 ): ThunkAction<void, RootStateType, unknown, ItemPutAction> {
   return dispatch => {
     dispatch(putItem('preferredLeftPaneWidth', preferredWidth));
+  };
+}
+
+function saveCallLocalPreviewPosition(
+  position: StorageAccessType['callLocalPreviewPosition']
+): ThunkAction<void, RootStateType, unknown, ItemPutAction> {
+  return dispatch => {
+    dispatch(putItem('callLocalPreviewPosition', position));
   };
 }
 

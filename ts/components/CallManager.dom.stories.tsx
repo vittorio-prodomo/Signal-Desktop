@@ -148,6 +148,8 @@ const createProps = (storyProps: Partial<PropsType> = {}): PropsType => ({
   setIsCallActive: action('set-is-call-active'),
   setLocalAudio: action('set-local-audio'),
   setLocalPreviewContainer: action('set-local-preview-container'),
+  localPreviewPosition: undefined,
+  saveLocalPreviewPosition: action('save-local-preview-position'),
   setLocalVideo: action('set-local-video'),
   setRendererCanvas: action('set-renderer-canvas'),
   setOutgoingRing: action('set-outgoing-ring'),

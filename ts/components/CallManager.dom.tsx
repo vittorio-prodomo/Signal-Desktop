@@ -64,6 +64,7 @@ import {
 import type { NotificationProfileType } from '../types/NotificationProfile.std.ts';
 import { strictAssert } from '../util/assert.std.ts';
 import type { SetLocalPreviewContainerType } from '../services/calling.preload.ts';
+import type { DraggablePositionType } from '../hooks/useDraggablePosition.dom.ts';
 import type { ContactModalStateType } from '../types/globalModals.std.ts';
 import type { PropsType as SmartCallingParticipantMenuProps } from '../state/smart/CallingParticipantMenu.preload.tsx';
 import { AxoTheme } from '../axo/AxoTheme.dom.tsx';
@@ -146,6 +147,8 @@ export type PropsType = {
   setLocalAudio: SetLocalAudioType;
   setLocalVideo: SetLocalVideoType;
   setLocalPreviewContainer: (options: SetLocalPreviewContainerType) => void;
+  localPreviewPosition: DraggablePositionType | undefined;
+  saveLocalPreviewPosition: (position: DraggablePositionType) => void;
   setOutgoingRing: (_: boolean) => void;
   setRendererCanvas: (_: SetRendererCanvasType) => void;
   showShareCallLinkViaSignal: (
@@ -210,6 +213,8 @@ function ActiveCallManager({
   setGroupCallVideoRequest,
   setLocalAudio,
   setLocalPreviewContainer,
+  localPreviewPosition,
+  saveLocalPreviewPosition,
   setLocalVideo,
   setRendererCanvas,
   setOutgoingRing,
@@ -495,6 +500,8 @@ function ActiveCallManager({
         sendGroupCallReaction={sendGroupCallReaction}
         setGroupCallVideoRequest={setGroupCallVideoRequestForConversation}
         setLocalPreviewContainer={setLocalPreviewContainer}
+        localPreviewPosition={localPreviewPosition}
+        saveLocalPreviewPosition={saveLocalPreviewPosition}
         setRendererCanvas={setRendererCanvas}
         setLocalAudio={setLocalAudio}
         setLocalVideo={setLocalVideo}
@@ -589,6 +596,8 @@ export function CallManager({
   setIsCallActive,
   setLocalAudio,
   setLocalPreviewContainer,
+  localPreviewPosition,
+  saveLocalPreviewPosition,
   setLocalVideo,
   setOutgoingRing,
   setRendererCanvas,
@@ -703,6 +712,8 @@ export function CallManager({
           setGroupCallVideoRequest={setGroupCallVideoRequest}
           setLocalAudio={setLocalAudio}
           setLocalPreviewContainer={setLocalPreviewContainer}
+          localPreviewPosition={localPreviewPosition}
+          saveLocalPreviewPosition={saveLocalPreviewPosition}
           setLocalVideo={setLocalVideo}
           setOutgoingRing={setOutgoingRing}
           setRendererCanvas={setRendererCanvas}

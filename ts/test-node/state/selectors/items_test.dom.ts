@@ -4,6 +4,7 @@
 import { assert } from 'chai';
 import {
   getAreWeASubscriber,
+  getCallLocalPreviewPosition,
   getEmojiSkinToneDefault,
   getPinnedConversationIds,
   getPreferredLeftPaneWidth,
@@ -70,6 +71,46 @@ describe('both/state/selectors/items', () => {
         preferredLeftPaneWidth: 345,
       });
       assert.strictEqual(getPreferredLeftPaneWidth(state), 345);
+    });
+  });
+
+  describe('#getCallLocalPreviewPosition', () => {
+    it('returns undefined if no value is present', () => {
+      assert.isUndefined(getCallLocalPreviewPosition(getRootState({})));
+    });
+
+    it('returns undefined if passed something invalid', () => {
+      [
+        null,
+        '250',
+        [250],
+        {},
+        { horizontal: 'left', vertical: 'top', x: 10 },
+        { horizontal: 'middle', vertical: 'top', x: 10, y: 10 },
+        { horizontal: 'left', vertical: 'center', x: 10, y: 10 },
+        { horizontal: 'left', vertical: 'top', x: '10', y: 10 },
+        { horizontal: 'left', vertical: 'top', x: 10, y: NaN },
+      ].forEach(callLocalPreviewPosition => {
+        const state = getRootState({
+          // oxlint-disable-next-line typescript/no-explicit-any
+          callLocalPreviewPosition: callLocalPreviewPosition as any,
+        });
+        assert.isUndefined(getCallLocalPreviewPosition(state));
+      });
+    });
+
+    it('returns the value in storage if it is valid', () => {
+      const callLocalPreviewPosition = {
+        horizontal: 'right',
+        vertical: 'top',
+        x: 24,
+        y: 120.5,
+      } as const;
+      const state = getRootState({ callLocalPreviewPosition });
+      assert.deepEqual(
+        getCallLocalPreviewPosition(state),
+        callLocalPreviewPosition
+      );
     });
   });
 

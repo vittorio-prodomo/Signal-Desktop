@@ -49,6 +49,8 @@ import {
   getMe,
 } from '../selectors/conversations.dom.ts';
 import { getIntl, getUserACI } from '../selectors/user.std.ts';
+import { getCallLocalPreviewPosition } from '../selectors/items.dom.ts';
+import { useItemsActions } from '../ducks/items.preload.ts';
 import { SmartCallingDeviceSelection } from './CallingDeviceSelection.preload.tsx';
 import { renderReactionPicker } from './renderReactionPicker.dom.tsx';
 import { isSharingPhoneNumberWithEverybody as getIsSharingPhoneNumberWithEverybody } from '../../util/phoneNumberSharingMode.preload.ts';
@@ -421,6 +423,7 @@ export const SmartCallManager = memo(function SmartCallManager() {
   const hasInitialLoadCompleted = useSelector(getHasInitialLoadCompleted);
   const me = useSelector(getMe);
   const activeNotificationProfile = useSelector(getActiveProfile);
+  const localPreviewPosition = useSelector(getCallLocalPreviewPosition);
 
   const [isOnline, setIsOnline] = useState(isWebAPIOnline() ?? false);
 
@@ -472,6 +475,7 @@ export const SmartCallManager = memo(function SmartCallManager() {
     toggleSettings,
   } = useCallingActions();
   const { pauseVoiceNotePlayer } = useAudioPlayerActions();
+  const { saveCallLocalPreviewPosition } = useItemsActions();
   const {
     showContactModal,
     showShareCallLinkViaSignal,
@@ -520,6 +524,8 @@ export const SmartCallManager = memo(function SmartCallManager() {
       setIsCallActive={setIsCallActive}
       setLocalAudio={setLocalAudio}
       setLocalPreviewContainer={setLocalPreviewContainer}
+      localPreviewPosition={localPreviewPosition}
+      saveLocalPreviewPosition={saveCallLocalPreviewPosition}
       setLocalVideo={setLocalVideo}
       setOutgoingRing={setOutgoingRing}
       setRendererCanvas={setRendererCanvas}
